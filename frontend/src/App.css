@@ -1,0 +1,266 @@
+/* ========================================
+   全局样式
+   ======================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ========================================
+   头部样式
+   ======================================== */
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 40px 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.app-header p {
+  font-size: 18px;
+  color: #6b7280;
+}
+
+/* ========================================
+   主内容区域
+   ======================================== */
+.app-main {
+  flex: 1;
+  padding: 60px 0;
+}
+
+.demo-section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 40px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.demo-section h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ========================================
+   功能卡片网格
+   ======================================== */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  background: linear-gradient(135deg, #f9fafb, #ffffff);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+.feature-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+}
+
+.feature-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.feature-card p {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* ========================================
+   使用说明
+   ======================================== */
+.instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.instruction-item {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.step-content h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.step-content p {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* ========================================
+   示例区域
+   ======================================== */
+.examples {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.example-card {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.example-card h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #78350f;
+  margin-bottom: 16px;
+}
+
+.example-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.example-card li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+  color: #92400e;
+  font-size: 14px;
+}
+
+.example-card li:last-child {
+  border-bottom: none;
+}
+
+/* ========================================
+   底部样式
+   ======================================== */
+.app-footer {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 30px 0;
+  text-align: center;
+  color: #6b7280;
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.app-footer p {
+  font-size: 14px;
+}
+
+/* ========================================
+   响应式设计
+   ======================================== */
+@media (max-width: 768px) {
+  .app-header h1 {
+    font-size: 28px;
+  }
+
+  .app-header p {
+    font-size: 16px;
+  }
+
+  .demo-section {
+    padding: 24px;
+  }
+
+  .demo-section h2 {
+    font-size: 24px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instruction-item {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-main {
+    padding: 30px 0;
+  }
+
+  .demo-section {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+}
