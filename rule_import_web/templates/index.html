@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>规则库导入工具</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background-color: #e9ecef;
+            border-color: #0056b3;
+        }
+        .result-card {
+            display: none;
+        }
+        .error-list {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+        .spinner {
+            width: 1rem;
+            height: 1rem;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-healthy {
+            background-color: #28a745;
+        }
+        .status-unhealthy {
+            background-color: #dc3545;
+        }
+        .stats-card {
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题和状态栏 -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h1><i class="bi bi-database-fill-gear"></i> 规则库导入工具</h1>
+                <p class="text-muted">将Excel规则库文件导入到PostgreSQL数据库</p>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>数据库状态:</span>
+                            <span id="dbStatus">
+                                <span class="status-indicator status-unhealthy"></span>
+                                检查中...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主功能卡片 -->
+        <div class="row">
+            <!-- 左侧功能区域 -->
+            <div class="col-md-8">
+                <!-- 模板下载卡片 -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-download"></i> 1. 下载Excel模板</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>下载规则库模板文件，按照模板格式填写数据。</p>
+                        <a href="/download_template" class="btn btn-success">
+                            <i class="bi bi-file-earmark-excel"></i> 下载模板文件
+                        </a>
+                        <small class="text-muted d-block mt-2">模板包含所有必要的字段和示例数据</small>
+                    </div>
+                </div>
+
+                <!-- 文件上传卡片 -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> 2. 上传并导入Excel文件</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="uploadArea">
+                            <div class="mb-3">
+                                <i class="bi bi-cloud-arrow-up" style="font-size: 3rem; color: #007bff;"></i>
+                            </div>
+                            <h5>点击或拖拽Excel文件到此区域</h5>
+                            <p class="text-muted">支持 .xlsx 和 .xls 格式，最大文件大小: 16MB</p>
+                            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                        </div>
+                        
+                        <div class="mt-3 text-center">
+                            <button id="uploadBtn" class="btn btn-primary btn-lg" disabled>
+                                <span id="uploadText">开始导入</span>
+                                <span class="spinner-border spinner-border-sm ms-2" role="status" id="uploadSpinner" style="display: none;"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导入结果卡片 -->
+                <div class="card result-card" id="resultCard">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> 导入结果</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="resultContent"></div>
+                        <div id="errorDetails" class="mt-3" style="display: none;">
+                            <h6><i class="bi bi-exclamation-triangle"></i> 错误详情：</h6>
+                            <div class="error-list border p-2 bg-light" id="errorList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧功能区域 -->
+            <div class="col-md-4">
+                <!-- 数据查看卡片 -->
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-eye"></i> 查看数据</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>查看已导入到数据库中的规则数据。</p>
+                        <div class="d-grid gap-2">
+                            <button id="viewDataBtn" class="btn btn-warning">
+                                <i class="bi bi-table"></i> 查看规则数据
+                            </button>
+                            <button id="countDataBtn" class="btn btn-outline-secondary">
+                                <i class="bi bi-bar-chart"></i> 统计记录数量
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据库管理卡片 -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> 数据库管理</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button id="initDbBtn" class="btn btn-outline-primary">
+                                <i class="bi bi-database-add"></i> 初始化数据库表
+                            </button>
+                            <button id="testDbBtn" class="btn btn-outline-info">
+                                <i class="bi bi-plug"></i> 测试数据库连接
+                            </button>
+                            <button id="clearDataBtn" class="btn btn-outline-danger" onclick="return confirm('确定要清空所有数据吗？此操作不可撤销！')">
+                                <i class="bi bi-trash"></i> 清空所有数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计信息卡片 -->
+                <div class="card stats-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> 统计信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="statsContent">
+                            <p class="text-muted">点击"统计记录数量"查看数据统计</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据查看卡片 -->
+        <div class="card mt-4" id="dataCard" style="display: none;">
+            <div class="card-header bg-dark text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-table"></i> 已导入数据 (最近100条)</h5>
+                    <span id="totalCount" class="badge bg-light text-dark">0 条记录</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="dataTable">
+                        <thead id="tableHeader"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadSpinner = document.getElementById('uploadSpinner');
+            const uploadText = document.getElementById('uploadText');
+            const resultCard = document.getElementById('resultCard');
+            const resultContent = document.getElementById('resultContent');
+            const errorDetails = document.getElementById('errorDetails');
+            const errorList = document.getElementById('errorList');
+            const dataCard = document.getElementById('dataCard');
+            const viewDataBtn = document.getElementById('viewDataBtn');
+            const countDataBtn = document.getElementById('countDataBtn');
+            const initDbBtn = document.getElementById('initDbBtn');
+            const testDbBtn = document.getElementById('testDbBtn');
+            const clearDataBtn = document.getElementById('clearDataBtn');
+            const dbStatus = document.getElementById('dbStatus');
+            const statsContent = document.getElementById('statsContent');
+            
+            let selectedFile = null;
+
+            // 初始化：检查数据库状态
+            checkDatabaseStatus();
+
+            // 点击上传区域选择文件
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // 拖拽上传
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#e9ecef';
+                uploadArea.style.borderColor = '#0056b3';
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.backgroundColor = '#f8f9ff';
+                uploadArea.style.borderColor = '#007bff';
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f8f9ff';
+                uploadArea.style.borderColor = '#007bff';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+
+            // 文件选择
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            function handleFileSelect(file) {
+                if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                    alert('请选择Excel文件 (.xlsx 或 .xls)');
+                    return;
+                }
+                
+                selectedFile = file;
+                uploadBtn.disabled = false;
+                uploadArea.innerHTML = `
+                    <div class="mb-3">
+                        <i class="bi bi-file-earmark-excel" style="font-size: 3rem; color: #28a745;"></i>
+                    </div>
+                    <h5>${file.name}</h5>
+                    <p class="text-muted">${(file.size / 1024).toFixed(2)} KB</p>
+                    <p class="text-primary"><i class="bi bi-check-circle"></i> 文件已选择，点击"开始导入"按钮</p>
+                `;
+            }
+
+            // 上传按钮点击事件
+            uploadBtn.addEventListener('click', async () => {
+                if (!selectedFile) return;
+
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                uploadBtn.disabled = true;
+                uploadSpinner.style.display = 'inline-block';
+                uploadText.textContent = '导入中...';
+
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    // 显示结果卡片
+                    resultCard.style.display = 'block';
+                    resultCard.scrollIntoView({ behavior: 'smooth' });
+
+                    if (result.success) {
+                        resultContent.innerHTML = `
+                            <div class="alert alert-success">
+                                <h4><i class="bi bi-check-circle-fill"></i> ${result.message}</h4>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="card text-center border-success">
+                                            <div class="card-body">
+                                                <h6 class="card-title text-success">成功记录</h6>
+                                                <h2 class="display-4 text-success">${result.success_count}</h2>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card text-center ${result.error_count > 0 ? 'border-warning' : 'border-success'}">
+                                            <div class="card-body">
+                                                <h6 class="card-title ${result.error_count > 0 ? 'text-warning' : 'text-success'}">失败记录</h6>
+                                                <h2 class="display-4 ${result.error_count > 0 ? 'text-warning' : 'text-success'}">${result.error_count}</h2>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        if (result.errors && result.errors.length > 0) {
+                            errorDetails.style.display = 'block';
+                            errorList.innerHTML = result.errors.map(error => 
+                                `<div class="text-danger mb-1"><i class="bi bi-x-circle"></i> ${error}</div>`
+                            ).join('');
+                        } else {
+                            errorDetails.style.display = 'none';
+                        }
+                        
+                        // 刷新统计信息
+                        updateStats();
+                    } else {
+                        resultContent.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h4><i class="bi bi-exclamation-triangle-fill"></i> 导入失败</h4>
+                                <p>${result.error}</p>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    resultContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h4><i class="bi bi-exclamation-triangle-fill"></i> 上传失败</h4>
+                            <p>网络错误或服务器异常: ${error.message}</p>
+                        </div>
+                    `;
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadSpinner.style.display = 'none';
+                    uploadText.textContent = '开始导入';
+                    
+                    // 重置文件选择
+                    selectedFile = null;
+                    fileInput.value = '';
+                    uploadArea.innerHTML = `
+                        <div class="mb-3">
+                            <i class="bi bi-cloud-arrow-up" style="font-size: 3rem; color: #007bff;"></i>
+                        </div>
+                        <h5>点击或拖拽Excel文件到此区域</h5>
+                        <p class="text-muted">支持 .xlsx 和 .xls 格式，最大文件大小: 16MB</p>
+                    `;
+                }
+            });
+
+            // 查看数据按钮
+            viewDataBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/view_data');
+                    const result = await response.json();
+
+                    if (result.error) {
+                        alert('获取数据失败: ' + result.error);
+                        return;
+                    }
+
+                    dataCard.style.display = 'block';
+                    dataCard.scrollIntoView({ behavior: 'smooth' });
+                    
+                    document.getElementById('totalCount').textContent = `${result.total_count} 条记录`;
+
+                    // 设置表头
+                    const tableHeader = document.getElementById('tableHeader');
+                    tableHeader.innerHTML = '<tr>' + result.columns.map(col => 
+                        `<th>${col}</th>`
+                    ).join('') + '</tr>';
+
+                    // 设置表数据
+                    const tableBody = document.getElementById('tableBody');
+                    if (result.data.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="' + result.columns.length + '" class="text-center text-muted">暂无数据</td></tr>';
+                    } else {
+                        tableBody.innerHTML = result.data.map(row => {
+                            return '<tr>' + result.columns.map(col => {
+                                let value = row[col] || '';
+                                // 限制显示长度
+                                if (value.length > 100) {
+                                    value = value.substring(0, 100) + '...';
+                                }
+                                return `<td title="${row[col] || ''}">${value}</td>`;
+                            }).join('') + '</tr>';
+                        }).join('');
+                    }
+                } catch (error) {
+                    alert('获取数据失败: ' + error.message);
+                }
+            });
+
+            // 统计记录数量按钮
+            countDataBtn.addEventListener('click', updateStats);
+
+            async function updateStats() {
+                try {
+                    const response = await fetch('/view_data');
+                    const result = await response.json();
+
+                    if (result.error) {
+                        statsContent.innerHTML = `<div class="alert alert-danger">${result.error}</div>`;
+                        return;
+                    }
+
+                    let statsHTML = `
+                        <div class="alert alert-success">
+                            <h6><i class="bi bi-database"></i> 数据库统计</h6>
+                            <p>总记录数: <strong>${result.total_count}</strong> 条</p>
+                            <p>最近显示: <strong>${Math.min(result.data.length, 100)}</strong> 条</p>
+                        </div>
+                    `;
+
+                    // 按分类统计
+                    const categories = {};
+                    result.data.forEach(row => {
+                        const category = row.category || '未分类';
+                        categories[category] = (categories[category] || 0) + 1;
+                    });
+
+                    if (Object.keys(categories).length > 0) {
+                        statsHTML += '<h6>分类统计:</h6>';
+                        statsHTML += '<ul class="list-group">';
+                        for (const [category, count] of Object.entries(categories)) {
+                            statsHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                ${category}
+                                <span class="badge bg-primary rounded-pill">${count}</span>
+                            </li>`;
+                        }
+                        statsHTML += '</ul>';
+                    }
+
+                    statsContent.innerHTML = statsHTML;
+                } catch (error) {
+                    statsContent.innerHTML = `<div class="alert alert-danger">获取统计失败: ${error.message}</div>`;
+                }
+            }
+
+            // 检查数据库状态
+            async function checkDatabaseStatus() {
+                try {
+                    const response = await fetch('/health');
+                    const data = await response.json();
+                    
+                    if (data.status === 'healthy') {
+                        dbStatus.innerHTML = `
+                            <span class="status-indicator status-healthy"></span>
+                            正常连接
+                        `;
+                    } else {
+                        dbStatus.innerHTML = `
+                            <span class="status-indicator status-unhealthy"></span>
+                            连接失败
+                        `;
+                    }
+                } catch (error) {
+                    dbStatus.innerHTML = `
+                        <span class="status-indicator status-unhealthy"></span>
+                        检查失败
+                    `;
+                }
+            }
+
+            // 初始化数据库表按钮
+            initDbBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/init_db');
+                    const data = await response.json();
+                    alert(data.message);
+                    checkDatabaseStatus();
+                } catch (error) {
+                    alert('初始化失败: ' + error.message);
+                }
+            });
+
+            // 测试数据库连接按钮
+            testDbBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/test_db');
+                    const text = await response.text();
+                    alert(text);
+                    checkDatabaseStatus();
+                } catch (error) {
+                    alert('测试失败: ' + error.message);
+                }
+            });
+
+            // 清空数据按钮
+            clearDataBtn.addEventListener('click', async () => {
+                if (!confirm('确定要清空所有数据吗？此操作不可撤销！')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/clear_data', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('数据已清空');
+                        updateStats();
+                        if (dataCard.style.display === 'block') {
+                            viewDataBtn.click();
+                        }
+                    } else {
+                        alert('清空失败: ' + data.error);
+                    }
+                } catch (error) {
+                    alert('清空失败: ' + error.message);
+                }
+            });
+
+            // 定期检查数据库状态（每30秒）
+            setInterval(checkDatabaseStatus, 30000);
+        });
+    </script>
+</body>
+</html>
